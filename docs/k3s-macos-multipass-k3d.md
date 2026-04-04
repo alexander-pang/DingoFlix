@@ -74,9 +74,9 @@ Clone the official repository and build:
 ```bash
 git clone --depth 1 https://github.com/k3s-io/k3s.git
 cd k3s
-make download
-make generate
-SKIP_VALIDATE=true make
+make deps
+sudo apt install docker-buildx
+SKIP_VALIDATE=true make local-image
 ```
 
 > If the build is successful, Docker images for K3s are generated locally inside the VM.
