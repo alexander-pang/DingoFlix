@@ -20,6 +20,7 @@ This starter kit provides a production-ready foundation for deploying applicatio
   - [K3s Installation](#2-k3s-installation)
   - [Networking Setup](#3-networking-setup-cilium)
   - [GitOps Setup](#4-gitops-setup-argo-cd-part-1-of-2)
+  - [Build on macOS with Multipass + k3d](#build-on-macos-with-multipass--k3d)
 - [Security Setup](#-security-setup)
   - [Cloudflare Integration](#cloudflare-integration)
 - [Verification](#-verification)
@@ -159,6 +160,12 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.35.1+k3s1" \
 # On the MASTER node - Verify the new node joined
 kubectl get nodes -o wide
 ```
+
+### 2a. Build on macOS with Multipass + k3d
+
+If you want to build K3s from source on macOS, use a Linux VM for the build and then run the resulting image locally with `k3d`.
+
+See [docs/k3s-macos-multipass-k3d.md](docs/k3s-macos-multipass-k3d.md) for a step-by-step macOS guide.
 
 ### Setting Up Lens (Optional but Recommended)
 
