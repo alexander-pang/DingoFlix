@@ -254,6 +254,25 @@ kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=argocd-server -
 # Apply Argo CD Projects
 kubectl apply -f infrastructure/controllers/argocd/projects.yaml
 
+# Install Config Management Plugin (CMP) for Kustomize + Helm support
+kubectl create configmap argocd-cmp-cm -n argocd --from-literal=kustomize-build-with-helm.yaml='apiVersion: argoproj.io/v1alpha1
+kind: ConfigManagementPlugin
+metadata:
+  name: kustomize-build-with-helm
+spec:
+  generate:
+    command: [ "sh", "-c" ]
+    args: [ "kustomize build --enable-helm" ]'
+
+# Add CMP volumes and sidecar to repo-server
+kubectl patch deployment argocd-repo-server -n argocd --type json -p '[
+  {"op": "add", "path": "/spec/template/spec/volumes/-", "value": {"name": "cmp-kustomize-build-with-helm", "configMap": {"name": "argocd-cmp-cm"}}},
+  {"op": "add", "path": "/spec/template/spec/containers/0/volumeMounts/-", "value": {"name": "cmp-kustomize-build-with-helm", "mountPath": "/home/argocd/cmp-server/config/plugin.yaml", "subPath": "kustomize-build-with-helm.yaml"}},
+  {"op": "add", "path": "/spec/template/spec/containers/-", "value": {"name": "kustomize-build-with-helm", "command": ["argocd-cmp-server"], "image": "quay.io/argoproj/argocd:latest", "securityContext": {"runAsNonRoot": true, "runAsUser": 999, "allowPrivilegeEscalation": false, "readOnlyRootFilesystem": true, "seccompProfile": {"type": "RuntimeDefault"}, "capabilities": {"drop": ["ALL"]}}, "volumeMounts": [{"name": "plugins", "mountPath": "/home/argocd/cmp-server/plugins"}, {"name": "cmp-kustomize-build-with-helm", "mountPath": "/home/argocd/cmp-server/config/plugin.yaml", "subPath": "kustomize-build-with-helm.yaml"}, {"mountPath": "/tmp", "name": "tmp"}]}}
+]'
+
+kubectl rollout restart deployment argocd-repo-server -n argocd
+
 # Get initial password (change immediately!)
 ARGO_PASS=$(kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d)
 echo "Initial Argo CD password: $ARGO_PASS"
@@ -508,6 +527,16 @@ kubectl get applicationset -n argocd -o yaml | grep repoURL
 
 # Update repo URLs if pointing to the original repo instead of your fork
 # See the "IMPORTANT" note in the Argo CD setup section above
+```
+
+**CMP Plugin Issues:**
+```bash
+# If applications show "could not find cmp-server plugin" errors
+# Check that the CMP plugin is installed and running
+kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-repo-server -o jsonpath='{.items[0].spec.containers[*].name}'
+
+# Should show: argocd-repo-server kustomize-build-with-helm
+# If missing, follow the CMP installation steps in the Argo CD setup section
 ```
 
 **Monitoring Stack Issues:**
