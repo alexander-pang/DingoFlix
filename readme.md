@@ -243,13 +243,16 @@ curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
 kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/experimental-install.yaml
 
-# Argo CD Bootstrap
+# Argo CD Installation
+# Create namespace and install official Argo CD
 kubectl create namespace argocd
-kubectl kustomize --enable-helm infrastructure/controllers/argocd | kubectl apply -f -
-kubectl apply -f infrastructure/controllers/argocd/projects.yaml
+kubectl apply -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml -n argocd
 
-# Wait for Argo CD
+# Wait for Argo CD to be ready
 kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=argocd-server -n argocd --timeout=300s
+
+# Apply Argo CD Projects
+kubectl apply -f infrastructure/controllers/argocd/projects.yaml
 
 # Get initial password (change immediately!)
 ARGO_PASS=$(kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d)
@@ -260,6 +263,17 @@ echo "Initial Argo CD password: $ARGO_PASS"
 # Then update the argocd-secret secret with your new bcrypt hash:
 kubectl -n argocd patch secret argocd-secret \
   -p '{"stringData": { "admin.password": "<YOUR_BCRYPT_HASH>", "admin.passwordMtime": "'$(date +%FT%T%Z)'" }}'
+
+# IMPORTANT: If you forked this repository, update the ApplicationSet repo URLs
+# Replace 'YOUR_USERNAME' and 'YOUR_REPO_NAME' with your GitHub username and repo name
+kubectl patch applicationset infrastructure-components -n argocd --type merge \
+  -p '{"spec":{"generators":[{"git":{"repoURL":"https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git","revision":"HEAD","directories":[{"path":"infrastructure/networking/*"},{"path":"infrastructure/storage/*"},{"path":"infrastructure/controllers/*"}]}}],"template":{"spec":{"source":{"repoURL":"https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git"}}}}}'
+
+kubectl patch applicationset monitoring-components -n argocd --type merge \
+  -p '{"spec":{"generators":[{"git":{"repoURL":"https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git","revision":"HEAD","directories":[{"path":"monitoring/*"}]}}],"template":{"spec":{"source":{"repoURL":"https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git"}}}}}'
+
+kubectl patch applicationset applications -n argocd --type merge \
+  -p '{"spec":{"generators":[{"git":{"repoURL":"https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git","revision":"HEAD","directories":[{"path":"my-apps/*"},{"path":"my-apps/myapplications-appset.yaml","exclude":true}]}}],"template":{"spec":{"source":{"repoURL":"https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git"}}}}}'
 ```
 
 ### 5. Monitoring Setup (Prometheus + Grafana + Loki + Tempo)
@@ -477,6 +491,16 @@ cilium hubble ui
 # L2 Announcement Problems
 ip -o link show | awk -F': ' '{print $2}'  # Verify node interfaces
 kubectl describe CiliumL2AnnouncementPolicy -n kube-system
+```
+
+**ApplicationSet Issues:**
+```bash
+# If ApplicationSets show "ApplicationSet is empty" errors
+# Check that repo URLs point to your forked repository
+kubectl get applicationset -n argocd -o yaml | grep repoURL
+
+# Update repo URLs if pointing to the original repo instead of your fork
+# See the "IMPORTANT" note in the Argo CD setup section above
 ```
 
 **Monitoring Stack Issues:**
