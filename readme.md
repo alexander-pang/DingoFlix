@@ -274,6 +274,13 @@ kubectl patch applicationset monitoring-components -n argocd --type merge \
 
 kubectl patch applicationset applications -n argocd --type merge \
   -p '{"spec":{"generators":[{"git":{"repoURL":"https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git","revision":"HEAD","directories":[{"path":"my-apps/*"},{"path":"my-apps/myapplications-appset.yaml","exclude":true}]}}],"template":{"spec":{"source":{"repoURL":"https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git"}}}}}'
+
+# Also update the Argo CD projects to allow your forked repo
+# Edit the projects.yaml file and add your repo URL to the sourceRepos list for each project,
+# or use kubectl edit to modify the projects directly:
+kubectl edit appproject infrastructure -n argocd
+kubectl edit appproject applications -n argocd  
+kubectl edit appproject monitoring -n argocd
 ```
 
 ### 5. Monitoring Setup (Prometheus + Grafana + Loki + Tempo)
