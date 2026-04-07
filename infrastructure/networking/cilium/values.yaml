@@ -41,14 +41,14 @@ k8sClientRateLimit:
   qps: 100
   burst: 200
 l2announcements:
-  enabled: true
+  enabled: false
 externalIPs:
-  enabled: true
+  enabled: false
 loadBalancer:
   # https://docs.cilium.io/en/stable/network/kubernetes/kubeproxy-free/#maglev-consistent-hashing
   algorithm: maglev
 gatewayAPI:
-  enabled: true
+  enabled: false
   # Enable Application-Layer Protocol Negotiation (ALPN) which will attempt HTTP/2, then HTTP 1.1.
   # Services that wish to use HTTP/2 must indicate that via their appProtocol (GEP-1911).
   enableAlpn: false
