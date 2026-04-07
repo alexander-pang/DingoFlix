@@ -14,8 +14,6 @@ spec:
     privateKeySecretRef:
       name: cloudflare-key
     solvers:
-      - dns01:
-          cloudflare:
-            apiTokenSecretRef:
-              name: cloudflare-api-token
-              key: api-token
+      - http01:
+          ingress:
+            class: traefik
