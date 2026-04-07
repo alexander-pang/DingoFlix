@@ -4,15 +4,9 @@ metadata:
   name: jellyfin
   namespace: jellyfin
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.tls: "true"
-    cert-manager.io/cluster-issuer: cloudflare-cluster-issuer
+    traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
   ingressClassName: traefik
-  tls:
-    - hosts:
-        - jellyfin.vanillax.xyz
-      secretName: jellyfin-tls
   rules:
     - host: jellyfin.vanillax.xyz
       http:
